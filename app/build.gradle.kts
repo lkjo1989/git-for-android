@@ -68,6 +68,16 @@ android {
     }
 }
 
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set(
+                "git-for-android-v${android.defaultConfig.versionName}.apk"
+            )
+        }
+    }
+}
+
 dependencies {
     // Core Android
     implementation("androidx.core:core-ktx:1.13.1")
