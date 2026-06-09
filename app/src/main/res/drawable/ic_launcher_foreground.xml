@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Connector lines forming the branching pattern -->
+    <path
+        android:pathData="M44,22 v32 h26 M44,54 v28"
+        android:strokeWidth="5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent" />
+
+    <!-- Top commit node (main branch, first commit) -->
+    <path
+        android:pathData="M44,22 m-7,0 a7,7 0,1,1 14,0 a7,7 0,1,1 -14,0"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Bottom commit node (main branch, merge base) -->
+    <path
+        android:pathData="M44,82 m-7,0 a7,7 0,1,1 14,0 a7,7 0,1,1 -14,0"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Branch tip commit node (feature branch) -->
+    <path
+        android:pathData="M70,54 m-7,0 a7,7 0,1,1 14,0 a7,7 0,1,1 -14,0"
+        android:fillColor="#FFFFFF" />
+</vector>
