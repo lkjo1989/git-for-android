@@ -525,6 +525,7 @@ private class ProgressMonitorAdapter(
     private var taskTitle: String = ""
     private var taskTotalWork = 0
     private var taskWorkDone = 0
+    private var lastEmittedLine: String = ""
 
     override fun start(totalTasks: Int) { }
 
@@ -532,10 +533,11 @@ private class ProgressMonitorAdapter(
         taskTitle = title ?: ""
         taskTotalWork = totalWork
         taskWorkDone = 0
+        lastEmittedLine = ""
     }
 
     override fun update(completed: Int) {
-        taskWorkDone = completed
+        taskWorkDone += completed
         val pct = if (taskTotalWork > 0) {
             (taskWorkDone * 100) / taskTotalWork
         } else {
@@ -546,7 +548,10 @@ private class ProgressMonitorAdapter(
         } else {
             taskTitle
         }
-        if (line.isNotBlank()) {
+        // Only emit when the displayed text actually changes, to avoid
+        // flooding the UI with thousands of updates per second
+        if (line.isNotBlank() && line != lastEmittedLine) {
+            lastEmittedLine = line
             callback(line)
         }
     }

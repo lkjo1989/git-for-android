@@ -103,6 +103,12 @@ class TerminalViewModel @Inject constructor(
                     if (repoId == null) {
                         appendError("No repository selected. Use 'repo list' and 'repo use <id>' first.")
                     } else {
+                        // Show immediate feedback for slow operations
+                        if (input.matches(Regex("git (checkout|co) .+"))) {
+                            val branch = input.removePrefix("git ").removePrefix("checkout ").removePrefix("co ").trim()
+                            appendSystem("Checking out branch '$branch'...")
+                        }
+
                         // Load author from settings
                         val name = repository.getSetting("author_name") ?: "Unknown"
                         val email = repository.getSetting("author_email") ?: "unknown@example.com"
@@ -166,6 +172,12 @@ class TerminalViewModel @Inject constructor(
     private fun appendError(text: String) {
         _uiState.update {
             it.copy(lines = it.lines + TerminalLine(text, TerminalLineType.ERROR))
+        }
+    }
+
+    private fun appendSystem(text: String) {
+        _uiState.update {
+            it.copy(lines = it.lines + TerminalLine(text, TerminalLineType.SYSTEM))
         }
     }
 

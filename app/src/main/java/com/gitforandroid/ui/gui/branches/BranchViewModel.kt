@@ -15,6 +15,8 @@ data class BranchUiState(
     val localBranches: List<GitBranch> = emptyList(),
     val remoteBranches: List<GitBranch> = emptyList(),
     val isLoading: Boolean = true,
+    val isCheckingOut: Boolean = false,
+    val checkingOutBranch: String = "",
     val showCreateDialog: Boolean = false,
     val newBranchName: String = "",
     val operationMessage: String? = null,
@@ -58,13 +60,14 @@ class BranchViewModel @Inject constructor(
 
     fun checkout(branchName: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isCheckingOut = true, checkingOutBranch = branchName, error = null) }
             repository.checkout(repoId, branchName)
                 .onSuccess { result ->
-                    _uiState.update { it.copy(operationMessage = result.message) }
+                    _uiState.update { it.copy(isCheckingOut = false, checkingOutBranch = "", operationMessage = result.message) }
                     loadBranches()
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(error = e.message) }
+                    _uiState.update { it.copy(isCheckingOut = false, checkingOutBranch = "", error = e.message) }
                 }
         }
     }

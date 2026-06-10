@@ -24,6 +24,15 @@ fun BranchScreen(
     viewModel: BranchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Show operation message via Snackbar
+    LaunchedEffect(uiState.operationMessage) {
+        uiState.operationMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearMessage()
+        }
+    }
 
     if (uiState.error != null) {
         ErrorDialog(message = uiState.error!!, onDismiss = { viewModel.clearError() })
@@ -65,39 +74,53 @@ fun BranchScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        when {
-            uiState.isLoading -> LoadingIndicator(Modifier.padding(padding))
-            else -> {
-                LazyColumn(Modifier.padding(padding)) {
-                    item {
-                        Text(
-                            "Local Branches",
-                            style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.padding(16.dp, 12.dp, 16.dp, 4.dp)
-                        )
-                    }
-                    items(uiState.localBranches) { branch ->
-                        BranchRow(branch, onCheckout = { viewModel.checkout(branch.name) },
-                            onDelete = { viewModel.deleteBranch(branch.name) })
-                    }
+        Column(Modifier.padding(padding)) {
+            // Show an indeterminate progress indicator when checking out a branch
+            if (uiState.isCheckingOut) {
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+                Text(
+                    "Switching to branch '${uiState.checkingOutBranch}'...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                )
+            }
 
-                    if (uiState.remoteBranches.isNotEmpty()) {
+            when {
+                uiState.isLoading -> LoadingIndicator()
+                else -> {
+                    LazyColumn {
                         item {
                             Text(
-                                "Remote Branches",
+                                "Local Branches",
                                 style = MaterialTheme.typography.titleSmall,
                                 modifier = Modifier.padding(16.dp, 12.dp, 16.dp, 4.dp)
                             )
                         }
-                        items(uiState.remoteBranches) { branch ->
-                            BranchRow(branch, onCheckout = { viewModel.checkout(branch.name.removePrefix("origin/")) },
-                                onDelete = null)
+                        items(uiState.localBranches) { branch ->
+                            BranchRow(branch, onCheckout = { viewModel.checkout(branch.name) },
+                                onDelete = { viewModel.deleteBranch(branch.name) })
                         }
-                    }
 
-                    item { Spacer(Modifier.height(16.dp)) }
+                        if (uiState.remoteBranches.isNotEmpty()) {
+                            item {
+                                Text(
+                                    "Remote Branches",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    modifier = Modifier.padding(16.dp, 12.dp, 16.dp, 4.dp)
+                                )
+                            }
+                            items(uiState.remoteBranches) { branch ->
+                                BranchRow(branch, onCheckout = { viewModel.checkout(branch.name.removePrefix("origin/")) },
+                                    onDelete = null)
+                            }
+                        }
+
+                        item { Spacer(Modifier.height(16.dp)) }
+                    }
                 }
             }
         }
