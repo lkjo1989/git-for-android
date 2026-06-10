@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
+        id: setup-java
         uses: actions/setup-java@v4
         with:
           java-version: "17"
@@ -26,9 +27,13 @@ jobs:
 
       - name: Run unit tests
         run: ./gradlew test --no-daemon
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.path }}
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.path }}
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
