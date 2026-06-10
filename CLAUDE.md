@@ -150,7 +150,7 @@ Workflows in `.github/workflows/`:
 | `ci.yml` | push/PR to `main` | build + test, uploads debug APK artifact |
 | `release.yml` | tag push (`v*`) | test → decode keystore from secret → `assembleRelease` → create GitHub Release with APK |
 
-**Tag-version sync**: Git tag (e.g. `v1.0.0`) must match `versionName` in `app/build.gradle.kts`. Bump both when releasing. APK filename auto-embeds the version.
+**Tag-version sync**: Git tag (e.g. `v1.0.0`) should match `versionName` in `app/build.gradle.kts`. Bump both when releasing. APK uses the default AGP filename (`app-release.apk`).
 
 **Required secret** for releases: `KEYSTORE_BASE64` — base64 of `gitforandroid.keystore` (generated via `base64 -w0 gitforandroid.keystore`).
 
