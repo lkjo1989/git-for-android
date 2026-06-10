@@ -11,9 +11,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build
 
-Source `set-jdk17.sh` first or rely on `gradle.properties` which points `org.gradle.java.home` to `.jdk17/`. Alternatively, use `use-gradle.sh` which wraps JDK 17 + system Gradle 8.8 + Android SDK.
-
 Gradle wrapper is configured for **Gradle 8.8**. The proxy is required for dependency downloads.
+
+Locally, Gradle discovers JDK 17 via `JAVA_HOME` (set by `source set-jdk17.sh`). CI uses `setup-java@v4` to set `JAVA_HOME` instead. Do NOT hardcode `org.gradle.java.home` in `gradle.properties` — it breaks CI portability.
+
+Alternatively, use `use-gradle.sh` which wraps JDK 17 + system Gradle 8.8 + Android SDK.
 
 ```bash
 # Full build with proxy
@@ -135,7 +137,31 @@ GUI-managed repos appear in the CLI's `repo list` via `repository.allRepos: Flow
 Release APK is signed with a self-signed keystore at the project root:
 - **Keystore**: `gitforandroid.keystore` (alias: `gitforandroid`, passwords: `android123`)
 - **Config**: `app/build.gradle.kts` → `signingConfigs { create("release") { ... } }`
+- Keystore is in `.gitignore` — never commit it. CI decodes it from `KEYSTORE_BASE64` secret.
 - Rebuild signed APK: `./gradlew assembleRelease` (signing happens automatically)
+- Release APK output uses default name `app-release.apk` (CI picks it up from `app/build/outputs/apk/release/`)
+
+## CI / Release (GitHub Actions)
+
+Workflows in `.github/workflows/`:
+
+| Workflow | Trigger | Actions |
+|----------|---------|---------|
+| `ci.yml` | push/PR to `main` | build + test, uploads debug APK artifact |
+| `release.yml` | tag push (`v*`) | test → decode keystore from secret → `assembleRelease` → create GitHub Release with APK |
+
+**Tag-version sync**: Git tag (e.g. `v1.0.0`) must match `versionName` in `app/build.gradle.kts`. Bump both when releasing. APK filename auto-embeds the version.
+
+**Required secret** for releases: `KEYSTORE_BASE64` — base64 of `gitforandroid.keystore` (generated via `base64 -w0 gitforandroid.keystore`).
+
+```bash
+# Release process
+# 1. Bump versionName in app/build.gradle.kts
+# 2. Commit, push
+# 3. Tag and push
+git tag v1.0.0 && git push origin v1.0.0
+# GitHub Actions builds and publishes the signed APK to Releases
+```
 
 ## Icons
 
