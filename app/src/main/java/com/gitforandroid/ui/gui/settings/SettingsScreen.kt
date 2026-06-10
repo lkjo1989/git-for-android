@@ -134,7 +134,7 @@ fun SettingsScreen(
 
             // About
             Text("About", style = MaterialTheme.typography.titleMedium)
-            Text("Git For Android v1.0.0", style = MaterialTheme.typography.bodyMedium)
+            Text("Git For Android v${uiState.versionName}", style = MaterialTheme.typography.bodyMedium)
             Text("Built with JGit, Jetpack Compose, and Kotlin",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)

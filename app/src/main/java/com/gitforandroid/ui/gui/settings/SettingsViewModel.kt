@@ -21,7 +21,8 @@ data class SettingsUiState(
     val sshKeyPath: String = "",
     val sshResult: String? = null,
     val logEnabled: Boolean = true,
-    val logPath: String = ""
+    val logPath: String = "",
+    val versionName: String = ""
 )
 
 @HiltViewModel
@@ -34,6 +35,13 @@ class SettingsViewModel @Inject constructor(
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
+        val versionName = try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+        _uiState.update { it.copy(versionName = versionName) }
+
         viewModelScope.launch {
             val name = repository.getSetting("author_name")
             val email = repository.getSetting("author_email")

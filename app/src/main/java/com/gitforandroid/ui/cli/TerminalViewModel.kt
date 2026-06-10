@@ -59,9 +59,9 @@ class TerminalViewModel @Inject constructor(
         _uiState.update { it.copy(currentInput = input, historyIndex = -1) }
     }
 
-    fun navigateHistory(direction: Int) {
+    fun navigateHistory(direction: Int): String {
         val history = _uiState.value.commandHistory
-        if (history.isEmpty()) return
+        if (history.isEmpty()) return _uiState.value.currentInput
 
         val newIndex = (_uiState.value.historyIndex + direction).coerceIn(-1, history.lastIndex)
         val input = if (newIndex >= 0) history[history.size - 1 - newIndex] else ""
@@ -69,6 +69,7 @@ class TerminalViewModel @Inject constructor(
         _uiState.update {
             it.copy(currentInput = input, historyIndex = newIndex)
         }
+        return input
     }
 
     fun executeCommand() {

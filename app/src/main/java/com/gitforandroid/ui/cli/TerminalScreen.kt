@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -14,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,6 +46,7 @@ fun TerminalScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(TerminalBackground)
+            .imePadding()
     ) {
         // Terminal output area
         LazyColumn(
@@ -116,13 +120,13 @@ fun TerminalScreen(
                                     true
                                 }
                                 Key.DirectionUp -> {
-                                    viewModel.navigateHistory(1)
-                                    textFieldValue = TextFieldValue(uiState.currentInput)
+                                    val newInput = viewModel.navigateHistory(1)
+                                    textFieldValue = TextFieldValue(newInput)
                                     true
                                 }
                                 Key.DirectionDown -> {
-                                    viewModel.navigateHistory(-1)
-                                    textFieldValue = TextFieldValue(uiState.currentInput)
+                                    val newInput = viewModel.navigateHistory(-1)
+                                    textFieldValue = TextFieldValue(newInput)
                                     true
                                 }
                                 else -> false
@@ -136,7 +140,14 @@ fun TerminalScreen(
                     lineHeight = 18.sp
                 ),
                 cursorBrush = androidx.compose.ui.graphics.SolidColor(TerminalGreen),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        viewModel.executeCommand()
+                        textFieldValue = TextFieldValue("")
+                    }
+                )
             )
         }
     }
