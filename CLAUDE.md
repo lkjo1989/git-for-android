@@ -137,8 +137,14 @@ GUI-managed repos appear in the CLI's `repo list` via `repository.allRepos: Flow
 Release APK is signed with a self-signed keystore at the project root:
 - **Keystore**: `gitforandroid.keystore` (alias: `gitforandroid`, passwords: `android123`)
 - **Config**: `app/build.gradle.kts` → `signingConfigs { create("release") { ... } }`
-- Keystore is in `.gitignore` — never commit it. CI decodes it from `KEYSTORE_BASE64` secret.
-- Rebuild signed APK: `./gradlew assembleRelease` (signing happens automatically)
+- Keystore is in `.gitignore` — never commit it. CI generates a fresh self-signed keystore on each release via `keytool` (no persistent secret needed).
+- Locally: generate a keystore manually before running `assembleRelease`:
+  ```bash
+  keytool -genkeypair -v -keystore gitforandroid.keystore -storetype PKCS12 \
+    -alias gitforandroid -keyalg RSA -keysize 2048 -validity 10000 \
+    -storepass android123 -keypass android123 \
+    -dname "CN=GitForAndroid, OU=Dev, O=GitForAndroid, L=Unknown, ST=Unknown, C=CN"
+  ```
 - Release APK output uses default name `app-release.apk` (CI picks it up from `app/build/outputs/apk/release/`)
 
 ## CI / Release (GitHub Actions)
@@ -148,11 +154,11 @@ Workflows in `.github/workflows/`:
 | Workflow | Trigger | Actions |
 |----------|---------|---------|
 | `ci.yml` | push/PR to `main` | build + test, uploads debug APK artifact |
-| `release.yml` | tag push (`v*`) | test → decode keystore from secret → `assembleRelease` → create GitHub Release with APK |
+| `release.yml` | tag push (`v*`) | test → generate keystore → `assembleRelease` → create GitHub Release with APK |
 
 **Tag-version sync**: Git tag (e.g. `v1.0.0`) should match `versionName` in `app/build.gradle.kts`. Bump both when releasing. APK uses the default AGP filename (`app-release.apk`).
 
-**Required secret** for releases: `KEYSTORE_BASE64` — base64 of `gitforandroid.keystore` (generated via `base64 -w0 gitforandroid.keystore`).
+No GitHub secrets are required for releases — the keystore is generated fresh on each run.
 
 ```bash
 # Release process
