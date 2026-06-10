@@ -33,18 +33,8 @@ jobs:
         run: |
           ./gradlew test --no-daemon -Dorg.gradle.java.home="$JAVA_HOME"
 
-      - name: Generate keystore
-        run: |
-          keytool -genkeypair -v \
-            -keystore gitforandroid.keystore \
-            -storetype PKCS12 \
-            -alias gitforandroid \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass android123 \
-            -keypass android123 \
-            -dname "CN=GitForAndroid, OU=Dev, O=GitForAndroid, L=Unknown, ST=Unknown, C=CN"
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > gitforandroid.keystore
 
       - name: Build release APK
         run: |
