@@ -92,9 +92,10 @@ class ExecuteCliCommandUseCase @Inject constructor(
                     else -> repository.stash(repoId)
                 }
             }
+            is GitCommand.Config -> Result.failure(Exception("git config is handled directly by the terminal"))
             is GitCommand.Init -> repository.initRepo(
                 command.path ?: (repository.getRepo(repoId)?.localPath ?: "."),
-                "init"
+                command.path?.let { java.io.File(it).name } ?: "repo"
             ).map { "Initialized repository" }
             is GitCommand.Clone -> repository.cloneRepo(command.url, command.path ?: ".")
             is GitCommand.Remote -> Result.success("origin")
@@ -103,8 +104,6 @@ class ExecuteCliCommandUseCase @Inject constructor(
 
         return result.map { stdout ->
             CliOutput(stdout.toString(), "", 0)
-        }.getOrElse { e ->
-            CliOutput("", e.message ?: "Error", 1)
-        }.let { Result.success(it) }
+        }
     }
 }

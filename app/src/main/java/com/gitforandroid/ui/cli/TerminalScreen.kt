@@ -27,11 +27,19 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun TerminalScreen(
+    autoSelectRepoId: Long? = null,
     viewModel: TerminalViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+
+    // Auto-select a repo when navigating from GUI
+    LaunchedEffect(autoSelectRepoId) {
+        autoSelectRepoId?.let { repoId ->
+            viewModel.selectRepo(repoId)
+        }
+    }
 
     // Auto-scroll to bottom when new lines appear
     LaunchedEffect(uiState.lines.size) {

@@ -3,6 +3,7 @@ package com.gitforandroid.ui.gui.operations
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -15,6 +16,7 @@ import com.gitforandroid.ui.common.ErrorDialog
 fun CommitScreen(
     repoId: Long,
     onCommitComplete: () -> Unit,
+    onOpenInTerminal: () -> Unit,
     onBack: () -> Unit,
     viewModel: CommitViewModel = hiltViewModel()
 ) {
@@ -37,6 +39,11 @@ fun CommitScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onOpenInTerminal) {
+                        Icon(Icons.Filled.Terminal, "Open in Terminal")
                     }
                 }
             )

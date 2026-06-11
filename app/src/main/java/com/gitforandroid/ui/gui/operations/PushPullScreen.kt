@@ -3,6 +3,7 @@ package com.gitforandroid.ui.gui.operations
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -14,6 +15,7 @@ import com.gitforandroid.ui.common.ErrorDialog
 @Composable
 fun PushPullScreen(
     repoId: Long,
+    onOpenInTerminal: () -> Unit,
     onBack: () -> Unit,
     viewModel: PushPullViewModel = hiltViewModel()
 ) {
@@ -43,6 +45,11 @@ fun PushPullScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onOpenInTerminal) {
+                        Icon(Icons.Filled.Terminal, "Open in Terminal")
                     }
                 }
             )

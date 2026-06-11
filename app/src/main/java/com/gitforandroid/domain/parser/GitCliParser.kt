@@ -35,6 +35,7 @@ class GitCliParser @Inject constructor() {
             "merge" -> parseMerge(args)
             "diff" -> parseDiff(args)
             "stash" -> parseStash(args)
+            "config" -> parseConfig(args)
             "remote" -> GitCommand.Remote
             else -> GitCommand.Unknown(trimmed)
         }
@@ -250,6 +251,12 @@ class GitCliParser @Inject constructor() {
             }
         }
         return GitCommand.Diff(staged, file)
+    }
+
+    private fun parseConfig(args: List<String>): GitCommand {
+        val key = args.firstOrNull() ?: return GitCommand.Unknown("git config requires arguments")
+        val value = args.drop(1).firstOrNull { !it.startsWith("-") }
+        return GitCommand.Config(key, value)
     }
 
     private fun parseStash(args: List<String>): GitCommand {

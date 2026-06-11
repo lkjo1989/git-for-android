@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import com.gitforandroid.ui.common.LoadingIndicator
 fun LogScreen(
     repoId: Long,
     onCommitClick: (String) -> Unit,
+    onOpenInTerminal: () -> Unit,
     onBack: () -> Unit,
     viewModel: LogViewModel = hiltViewModel()
 ) {
@@ -33,6 +35,11 @@ fun LogScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onOpenInTerminal) {
+                        Icon(Icons.Filled.Terminal, "Open in Terminal")
                     }
                 }
             )

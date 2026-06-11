@@ -79,8 +79,17 @@ fun AppNavHost() {
                 )
             }
 
-            composable(Screen.Terminal.route) {
-                TerminalScreen()
+            composable(
+                route = Screen.Terminal.ROUTE,
+                arguments = listOf(navArgument("repoId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
+                })
+            ) { backStackEntry ->
+                val autoRepoId = backStackEntry.arguments?.getLong("repoId") ?: -1L
+                TerminalScreen(
+                    autoSelectRepoId = if (autoRepoId > 0) autoRepoId else null
+                )
             }
 
             composable(Screen.Settings.route) {
@@ -94,6 +103,16 @@ fun AppNavHost() {
                 )
             }
 
+            // Helper to navigate to Terminal with a specific repo
+            val openInTerminal: (Long) -> Unit = { repoId ->
+                navController.navigate(Screen.Terminal.createRoute(repoId)) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                }
+            }
+
             composable(
                 route = Screen.Status.ROUTE,
                 arguments = listOf(navArgument("repoId") { type = NavType.LongType })
@@ -105,6 +124,7 @@ fun AppNavHost() {
                     onLogClick = { navController.navigate(Screen.Log.createRoute(repoId)) },
                     onBranchesClick = { navController.navigate(Screen.Branches.createRoute(repoId)) },
                     onPushPullClick = { navController.navigate(Screen.PushPull.createRoute(repoId)) },
+                    onOpenInTerminal = { openInTerminal(repoId) },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -117,6 +137,7 @@ fun AppNavHost() {
                 CommitScreen(
                     repoId = repoId,
                     onCommitComplete = { navController.popBackStack() },
+                    onOpenInTerminal = { openInTerminal(repoId) },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -131,6 +152,7 @@ fun AppNavHost() {
                     onCommitClick = { hash ->
                         navController.navigate(Screen.CommitDetail.createRoute(repoId, hash))
                     },
+                    onOpenInTerminal = { openInTerminal(repoId) },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -158,6 +180,7 @@ fun AppNavHost() {
                 val repoId = backStackEntry.arguments?.getLong("repoId") ?: return@composable
                 BranchScreen(
                     repoId = repoId,
+                    onOpenInTerminal = { openInTerminal(repoId) },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -169,6 +192,7 @@ fun AppNavHost() {
                 val repoId = backStackEntry.arguments?.getLong("repoId") ?: return@composable
                 PushPullScreen(
                     repoId = repoId,
+                    onOpenInTerminal = { openInTerminal(repoId) },
                     onBack = { navController.popBackStack() }
                 )
             }

@@ -24,6 +24,7 @@ sealed class GitCommand {
     data class Merge(val branch: String) : GitCommand()
     data class Diff(val staged: Boolean = false, val file: String? = null) : GitCommand()
     data class Stash(val subCommand: String? = null) : GitCommand() // null = push, "pop", "list"
+    data class Config(val key: String, val value: String? = null) : GitCommand()
     object Remote : GitCommand()
     data class Unknown(val raw: String) : GitCommand()
 }

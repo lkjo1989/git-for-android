@@ -22,6 +22,9 @@ Alternatively, use `use-gradle.sh` which wraps JDK 17 + system Gradle 8.8 + Andr
 source set-jdk17.sh
 export GRADLE_OPTS="-Dhttps.proxyHost=192.168.56.1 -Dhttps.proxyPort=7890 -Dhttp.proxyHost=192.168.56.1 -Dhttp.proxyPort=7890"
 ./gradlew assembleDebug --no-daemon
+
+# Release APK (one-step script — generates keystore if needed, outputs GitForAndroid-release.apk)
+./build-release.sh
 ```
 
 ### Running tests
@@ -84,7 +87,8 @@ data/local/      Room database (gitforandroid.db): RepoDao + SettingDao
 - **Navigation**: Bottom nav with 3 tabs (Repos, Terminal, Settings). Repo-specific screens (Status, Commit, Log, Branches, PushPull) are pushed onto the nav stack with `repoId` as a nav argument
 - **Dual mode**: GUI screens under `ui/gui/`, CLI terminal under `ui/cli/`. Both use the same `AppRepository` → `GitService` backend
 - **CLI parsing**: `domain/parser/GitCliParser` tokenizes git command strings into `GitCommand` sealed-class AST; `ExecuteCliCommandUseCase` dispatches each variant to the appropriate repository method
-- **Error handling**: All `GitService` and `AppRepository` methods return `kotlin.Result<T>`; ViewModels map results to UI state via `MutableStateFlow.update {}`
+- **CLI command dispatch order** (in `TerminalViewModel.executeCommand()`): built-ins (`help`/`clear`/`pwd`) → `repo <sub>` → `git config` (no repo needed) → `git init`/`git clone` (handled directly via `AppRepository`, no pre-selected repoId required, auto-selects created repo) → other `git <cmd>` (requires repoId; auto-selects if only 1 repo exists; shows guided error if 0 or >1)
+- **Error handling**: All `GitService` and `AppRepository` methods return `kotlin.Result<T>`; ViewModels map results to UI state via `MutableStateFlow.update {}`. `ExecuteCliCommandUseCase` preserves the failure channel (no longer wraps everything in `Result.success`) so `.onFailure {}` fires in ViewModel.
 
 ### Key classes
 
@@ -94,9 +98,9 @@ data/local/      Room database (gitforandroid.db): RepoDao + SettingDao
 | `GitServiceImpl` | JGit 6.10 implementation — all ops on `Dispatchers.IO`, extension functions map JGit types to domain models |
 | `AppRepository` | Single data-layer entry point; maps `repoId` → `localPath` via Room DAO, delegates to `GitService`, manages `allRepos: Flow<List<RepoEntity>>` |
 | `GitCliParser` | Tokenizer + parser: `"git commit -m 'msg'"` → `GitCommand.Commit(message="msg")`. Handles quoting, short flags (`-am`), aliases (`git co` → checkout) |
-| `CommandAST` (`GitCommand` sealed class) | AST variants: Init, Clone, Status, Add, Commit, Push, Pull, Fetch, Log, Branch, Checkout, Merge, Diff, Stash, Remote, Unknown |
-| `ExecuteCliCommandUseCase` | Takes parsed command + repoId, dispatches to `AppRepository`, converts all result types to `CliOutput` |
-| `TerminalViewModel` | Manages CLI REPL: input, 500-entry command history, repo selection via `repo use <id>`, `help`/`clear` built-ins |
+| `CommandAST` (`GitCommand` sealed class) | AST variants: Init, Clone, Status, Add, Commit, Push, Pull, Fetch, Log, Branch, Checkout, Merge, Diff, Stash, Remote, Config, Unknown |
+| `ExecuteCliCommandUseCase` | Takes parsed command + repoId, dispatches to `AppRepository`, returns `Result<CliOutput>`. Errors propagate via `Result.failure()` — the ViewModel's `.onFailure {}` handler displays them. `Config` and repo-creation commands (`Init`/`Clone` without pre-selected repoId) are handled directly in `TerminalViewModel`, not here. |
+| `TerminalViewModel` | Manages CLI REPL: input state, 500-entry command history with draft preservation, `help`/`clear`/`pwd` built-ins, `repo list|use|current`, `git config user.name|user.email` for author settings, `git init`/`git clone` handled directly (no repoId needed) with auto-select on success, single-repo auto-select for other git commands |
 | `AppNavHost` | Central navigation graph: defined in `navigation/AppNavHost.kt`, all routes in `navigation/Screen.kt`, bottom bar visibility logic |
 | `AppModule` (DI) | Hilt `@Module`: provides singletons for database, DAOs, GitService, GitCliParser, AppRepository |
 | `Author` | Data class: `name`, `email` — passed through commit/push/pull flows from Settings to JGit's `PersonIdent` |
@@ -115,7 +119,7 @@ Home (repo list) ──→ Clone (modal)
                       ├──→ Log/{repoId} ──→ CommitDetail/{repoId}/{hash}
                       ├──→ Branches/{repoId}
                       └──→ PushPull/{repoId}
-Terminal (standalone, repo selected via "repo use" command)
+Terminal (standalone, repo selected via "git init"/"git clone" auto-select, "repo use <id>", or auto-select when only 1 repo exists)
 Settings (standalone)
 ```
 

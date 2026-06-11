@@ -11,7 +11,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
-    data object Terminal : Screen("terminal")
+    data object Terminal : Screen("terminal?repoId={repoId}") {
+        const val ROUTE = "terminal?repoId={repoId}"
+        fun createRoute(repoId: Long? = null) = if (repoId != null) "terminal?repoId=$repoId" else "terminal"
+    }
     data object Settings : Screen("settings")
     data object Clone : Screen("clone")
     data class Status(val repoId: Long) : Screen("status/{repoId}") {

@@ -25,6 +25,7 @@ fun StatusScreen(
     onLogClick: () -> Unit,
     onBranchesClick: () -> Unit,
     onPushPullClick: () -> Unit,
+    onOpenInTerminal: () -> Unit,
     onBack: () -> Unit,
     viewModel: StatusViewModel = hiltViewModel()
 ) {
@@ -55,6 +56,9 @@ fun StatusScreen(
                     }
                     IconButton(onClick = onPushPullClick) {
                         Icon(Icons.Filled.CloudUpload, contentDescription = "Push/Pull")
+                    }
+                    IconButton(onClick = onOpenInTerminal) {
+                        Icon(Icons.Filled.Terminal, contentDescription = "Open in Terminal")
                     }
                 }
             )

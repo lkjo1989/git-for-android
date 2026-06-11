@@ -400,6 +400,41 @@ class GitCliParserTest {
         assertEquals("list", (result as GitCommand.Stash).subCommand)
     }
 
+    // --- Config ---
+
+    @Test
+    fun `parse git config user dot name with value`() {
+        val result = parser.parse("git config user.name John")
+        assertTrue(result is GitCommand.Config)
+        val cmd = result as GitCommand.Config
+        assertEquals("user.name", cmd.key)
+        assertEquals("John", cmd.value)
+    }
+
+    @Test
+    fun `parse git config user dot email with quoted value`() {
+        val result = parser.parse("git config user.email 'john@example.com'")
+        assertTrue(result is GitCommand.Config)
+        val cmd = result as GitCommand.Config
+        assertEquals("user.email", cmd.key)
+        assertEquals("john@example.com", cmd.value)
+    }
+
+    @Test
+    fun `parse git config without value`() {
+        val result = parser.parse("git config user.name")
+        assertTrue(result is GitCommand.Config)
+        val cmd = result as GitCommand.Config
+        assertEquals("user.name", cmd.key)
+        assertNull(cmd.value)
+    }
+
+    @Test
+    fun `parse git config with no args returns Unknown`() {
+        val result = parser.parse("git config")
+        assertTrue(result is GitCommand.Unknown)
+    }
+
     // --- Remote ---
 
     @Test

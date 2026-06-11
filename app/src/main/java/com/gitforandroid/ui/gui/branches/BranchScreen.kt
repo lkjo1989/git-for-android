@@ -20,6 +20,7 @@ import com.gitforandroid.ui.common.LoadingIndicator
 @Composable
 fun BranchScreen(
     repoId: Long,
+    onOpenInTerminal: () -> Unit,
     onBack: () -> Unit,
     viewModel: BranchViewModel = hiltViewModel()
 ) {
@@ -69,6 +70,9 @@ fun BranchScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onOpenInTerminal) {
+                        Icon(Icons.Filled.Terminal, "Open in Terminal")
+                    }
                     IconButton(onClick = { viewModel.showCreateDialog() }) {
                         Icon(Icons.Filled.Add, "Create Branch")
                     }
