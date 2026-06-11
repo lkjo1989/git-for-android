@@ -117,7 +117,10 @@ class AppRepository @Inject constructor(
         withRepo(repoId) { gitService.deleteBranch(it, name, force) }
 
     suspend fun checkout(repoId: Long, name: String): Result<CheckoutResult> =
-        withRepo(repoId) { gitService.checkout(it, name) }
+        withRepo(repoId) { gitService.checkout(it, name) }.also { result ->
+            // Refresh currentBranch in DB so GUI picks up the branch change
+            result.onSuccess { getCurrentBranch(repoId) }
+        }
 
     suspend fun merge(repoId: Long, branch: String): Result<String> =
         withRepo(repoId) { gitService.merge(it, branch) }

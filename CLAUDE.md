@@ -44,6 +44,15 @@ Tests use **JUnit 4** (not JUnit 5). Coroutine-aware tests use `kotlinx-coroutin
 
 There are currently no Android instrumented tests; `androidTest/` exists in the source tree but is empty.
 
+Test count: **121 tests** across 4 test classes:
+
+| Test class | Count | Scope |
+|------------|-------|-------|
+| `GitCliParserTest` | 40 | Command parsing (all variants, edge cases) |
+| `GitServiceImplTest` | 18 | Local git operations (init, status, add, commit, log, etc.) |
+| `GitServiceRemoteTest` | 18 | Remote operations via local bare repos (clone, push, pull, fetch, round-trip) |
+| `TerminalScreenTest` | 23 | Terminal ViewModel (state, history, commands, git init, git config) |
+
 ### Clearing corrupted Gradle cache
 
 If Gradle transform cache gets corrupted (from interrupted builds), clear it:
@@ -127,6 +136,8 @@ Settings (standalone)
 
 GUI-managed repos appear in the CLI's `repo list` via `repository.allRepos: Flow` collected in `TerminalViewModel.init`. A repo cloned in GUI → immediately visible in CLI, and vice versa.
 
+**GUI→Terminal shortcut**: Every repo detail screen (Status, Commit, Log, Branches, PushPull) has a Terminal icon (![terminal]) in the top bar. It navigates to `Screen.Terminal.createRoute(repoId)` which passes the repoId as a route argument. `TerminalScreen` calls `viewModel.selectRepo(repoId)` in a `LaunchedEffect`, which sets `currentRepoId` and prints a "Switched to repo" message. The Terminal route is `"terminal?repoId={repoId}"` with `defaultValue = -1L`, so bottom-nav navigation without a repoId works as before.
+
 ## JGit compatibility notes
 
 - `DirCache.writeTree()` takes `ObjectInserter`, not `ObjectReader` — pass `repository.newObjectInserter()`
@@ -135,6 +146,7 @@ GUI-managed repos appear in the CLI's `repo list` via `repository.allRepos: Flow
 - All JGit operations must run on `Dispatchers.IO` (blocking I/O)
 - **Remote branch checkout**: `checkout()` auto-detects remote-tracking branches (`refs/remotes/origin/*`) and creates a local tracking branch via `setCreateBranch(true).setUpstreamMode(TRACK)` when no local branch exists — equivalent to `git checkout -b <name> --track origin/<name>`
 - **Clone progress**: progress callback passes `String` (git-style messages like `"Receiving objects: 45% (123/456)"`), not `Float`. The `ProgressMonitorAdapter` formats JGit's `beginTask`/`update` into human-readable text.
+- **Remote operations**: JGit 6.10's `PushCommand.setRemote()`, `PullCommand.setRemote()`, and `FetchCommand.setRemote()` require a configured remote **name** (like `"origin"`), not a raw URL. For init-ed repos, call `git.remoteAdd().setName("origin").setUri(new URIish(url)).call()` first. Clone automatically configures the origin remote. Raw URLs work with `CloneCommand.setURI()` and `TransportLocal` for file-based remotes in tests.
 
 ## Signing (release builds)
 
@@ -161,7 +173,7 @@ Workflows in `.github/workflows/`:
 | `ci.yml` | push/PR to `main` | build + test, uploads debug APK artifact |
 | `release.yml` | tag push (`v*`) | test → decode keystore from secret → `assembleRelease` → create GitHub Release with APK |
 
-**Tag-version sync**: Git tag (e.g. `v1.0.0`) should match `versionName` in `app/build.gradle.kts`. Bump both when releasing. APK uses the default AGP filename (`app-release.apk`).
+**Tag-version sync**: Git tag (e.g. `v1.0.6`) **must** match `versionName` in `app/build.gradle.kts`. Always bump both when releasing — mismatches (like v1.0.4 tagged but versionName still 1.0.3) cause confusion in the UI and GitHub Releases. The Settings screen reads `versionName` via `PackageManager.getPackageInfo().versionName` at runtime — it comes from the APK manifest, not from any hardcoded string in source. APK uses the default AGP filename (`app-release.apk`).
 
 **Required secret** for releases: `KEYSTORE_BASE64` — base64 of `gitforandroid.keystore` generated with JDK 17 (not JDK 21+):
 ```bash
@@ -194,8 +206,24 @@ App uses Android adaptive icon (API 26+), defined entirely in XML vectors:
 
 - JUnit 4 (`@Test`, `@Before`, `@After`), **not** JUnit 5
 - `kotlinx-coroutines-test` provides `runTest` which wraps test bodies to call `suspend` functions
-- `GitServiceImplTest` creates temp directories under `java.io.tmpdir`, cleans up in `@After`
-- `GitCliParserTest` is pure unit tests (no Android dependencies, no coroutines)
+
+### Test categories
+
+**Pure JVM** — `GitCliParserTest`: no Android dependencies, no coroutines. Instant, no setup.
+
+**JGit local tests** — `GitServiceImplTest`: creates temp dirs under `java.io.tmpdir`, cleans up in `@After`. Uses `runTest` for suspend functions. Pure JVM, no Android framework.
+
+**Remote git tests** — `GitServiceRemoteTest`: uses local bare repos via `file://` protocol + JGit `TransportLocal` — tests clone/push/pull/fetch without network. **JGit 6.10 caveat**: `setRemote()` on push/fetch/pull requires a configured remote *name* (like `"origin"`), not a raw URL. Clone auto-configures `origin`; for init-ed repos, use `git.remoteAdd().setName("origin").setUri(URIish(url)).call()` in test setup. Uses `runTest`.
+
+**Robolectric tests** — `TerminalScreenTest`: needs Android framework (Context, Room). Config: `@RunWith(AndroidJUnit4::class)`, `@Config(sdk = [33], application = TestApplication::class)`. Uses `Room.inMemoryDatabaseBuilder(...).allowMainThreadQueries()` to avoid disk I/O. Bypasses Hilt by manually constructing ViewModel with test dependencies. `TestApplication` is a minimal non-Hilt Application class in the test source tree.
+
+**Async coroutine handling in tests**: `viewModelScope.launch {}` dispatches asynchronously even with `Dispatchers.Main.immediate` in Robolectric. For tests that trigger ViewModel async work, use the `waitForState` helper (polls with `ShadowLooper.idle()` + `Thread.sleep(10)`):
+
+```kotlin
+waitForState { viewModel.uiState.value.currentRepoId != null }
+```
+
+`ShadowLooper.idle()` alone isn't always sufficient — background IO (`Dispatchers.IO`) needs real time to complete before the Main looper processes the callback.
 
 ## Room database
 
