@@ -283,7 +283,9 @@ class TerminalScreenTest {
     fun `git config user dot name sets author name`() = runBlocking {
         viewModel.updateInput("git config user.name TestUser")
         viewModel.executeCommand()
-        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        // handleGitConfig runs in viewModelScope.launch; config writes via
+        // Room suspend DAO. Drain looper + poll for async completion.
+        waitForState { runBlocking { repository.getSetting("author_name") } == "TestUser" }
 
         val name = repository.getSetting("author_name")
         assert(name == "TestUser") { "Author name should be persisted, got: $name" }
@@ -293,7 +295,7 @@ class TerminalScreenTest {
     fun `git config user dot email sets author email`() = runBlocking {
         viewModel.updateInput("git config user.email test@example.com")
         viewModel.executeCommand()
-        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        waitForState { runBlocking { repository.getSetting("author_email") } == "test@example.com" }
 
         val email = repository.getSetting("author_email")
         assert(email == "test@example.com") { "Author email should be persisted, got: $email" }

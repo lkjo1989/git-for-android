@@ -79,7 +79,6 @@ class GitServiceRemoteTest {
     private fun seedBareRepo() {
         createBareRepo()
         val seedDir = newRepo("seed")
-        val seedPath = seedDir.absolutePath
 
         Git.init().setDirectory(seedDir).call().use { git ->
             File(seedDir, "README.md").writeText("# Test Repo")
